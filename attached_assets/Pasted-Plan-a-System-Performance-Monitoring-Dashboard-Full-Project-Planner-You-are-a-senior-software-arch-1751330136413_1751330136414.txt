@@ -1,0 +1,83 @@
+Plan a System Performance Monitoring Dashboard – Full Project Planner
+You are a senior software architect and full-stack engineer. Help me plan, architect, and design a complete System Performance Monitoring Dashboard that tracks and predicts system resource usage. The system must include the following components and features:
+
+🎯 Project Objectives:
+Build a secure, scalable, and responsive web-based dashboard to:
+
+Monitor real-time CPU, RAM, and disk usage.
+
+Forecast future system performance using machine learning.
+
+Provide an AI assistant to help users query system behavior.
+
+✅ Core Functional Requirements:
+Performance Prediction Module
+
+Use historical system metrics to forecast future usage of CPU, RAM, and disk.
+
+Recommend appropriate machine learning models for time-series forecasting.
+
+Include model training, validation, and inference pipelines.
+
+Real-Time Data Visualization
+
+Implement dynamic, auto-updating dashboards showing live metrics.
+
+Use interactive charts and graphs to display system trends.
+
+AI Chatbot Integration
+
+Integrate an AI assistant that can interpret natural language questions about performance metrics.
+
+Use the Gemini API to provide LLM-powered answers.
+
+Responsive Web UI
+
+Design a clean, modern web interface.
+
+Ensure full responsiveness for desktop and mobile, with light/dark mode support.
+
+Authentication and Security
+
+Implement user authentication (sign-up, login) with encryption and secure session management.
+
+Support role-based access control (e.g., admin, viewer).
+
+Documentation
+
+Include detailed technical documentation for all modules: architecture, APIs, ML components, and deployment strategies.
+
+➕ Additional Features:
+Custom Alerting System: Notify users via email, Slack, or in-app notifications when thresholds are crossed.
+
+Export Tools: Export dashboard views and reports in PDF or CSV formats.
+
+Log Viewer: Allow users to browse and filter system logs.
+
+Containerized Deployment: Use a container-based deployment model with CI/CD pipeline support.
+
+📦 Output Deliverables:
+Please provide the following in your response:
+
+System Architecture Overview
+
+Describe how components (microservices, APIs, ML pipelines, databases) interact.
+
+Show data flow between collectors, processing layers, storage, and the dashboard.
+
+Authentication Strategy
+
+Recommend a secure and scalable approach to authentication and session management.
+
+Include how to manage role-based access and session control.
+
+Assumptions, Risks, and Mitigation Strategies
+
+Identify system-level assumptions (e.g., data input rates, user load).
+
+List potential risks like data latency, model drift, or performance bottlenecks.
+
+Propose strategies to mitigate those risks.
+
+📌 Final Note:
+Organize your answer clearly with headings and diagrams if possible. Aim for a comprehensive yet modular design plan that can evolve into a production-grade system.
