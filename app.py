@@ -14,6 +14,7 @@ from components.dashboard import Dashboard
 from components.alerts import AlertManager
 from components.auth import AuthenticationManager
 from utils.data_storage import DataStorage
+from database import DatabaseStorage
 from utils.helpers import format_bytes, get_color_for_usage
 
 # Page configuration
@@ -32,7 +33,7 @@ def initialize_components():
     predictor = PerformancePredictor()
     ai_assistant = AIAssistant()
     alert_manager = AlertManager()
-    data_storage = DataStorage()
+    data_storage = DatabaseStorage()  # Use database storage instead of file storage
     dashboard = Dashboard()
     auth_manager = AuthenticationManager()
     
@@ -619,18 +620,22 @@ def render_user_management(auth_manager):
             if st.button("🔄 Change Role"):
                 current_role = auth_manager.users[selected_user].get('role', 'user')
                 new_role = 'admin' if current_role == 'user' else 'user'
-                auth_manager.users[selected_user]['role'] = new_role
-                auth_manager.save_users()
-                st.success(f"Changed {selected_user} role to {new_role}")
-                st.rerun()
+                if auth_manager.db_storage.update_user_role(selected_user, new_role):
+                    auth_manager.load_users()  # Reload users cache
+                    st.success(f"Changed {selected_user} role to {new_role}")
+                    st.rerun()
+                else:
+                    st.error("Error updating user role")
         
         with col3:
             if st.button("🗑️ Delete User"):
                 if selected_user != st.session_state.get('user_email'):
-                    del auth_manager.users[selected_user]
-                    auth_manager.save_users()
-                    st.success(f"Deleted user {selected_user}")
-                    st.rerun()
+                    if auth_manager.db_storage.delete_user(selected_user):
+                        auth_manager.load_users()  # Reload users cache
+                        st.success(f"Deleted user {selected_user}")
+                        st.rerun()
+                    else:
+                        st.error("Error deleting user")
                 else:
                     st.error("Cannot delete your own account")
     else:
@@ -651,9 +656,11 @@ def render_user_management(auth_manager):
                 success, message = auth_manager.create_user(admin_email, admin_password, admin_name)
                 if success:
                     # Set as admin
-                    auth_manager.users[admin_email]['role'] = 'admin'
-                    auth_manager.save_users()
-                    st.success(f"Admin user created successfully: {admin_email}")
+                    if auth_manager.db_storage.update_user_role(admin_email, 'admin'):
+                        auth_manager.load_users()  # Reload users cache
+                        st.success(f"Admin user created successfully: {admin_email}")
+                    else:
+                        st.error("User created but failed to set admin role")
                 else:
                     st.error(message)
             else:

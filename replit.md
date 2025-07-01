@@ -12,7 +12,7 @@ The application follows a modular architecture with clear separation of concerns
 - **Data Collection Layer**: psutil-based system metrics collection
 - **Machine Learning Layer**: scikit-learn models for performance prediction
 - **AI Integration**: Google Gemini API for natural language query processing
-- **Storage Layer**: File-based data persistence with in-memory caching
+- **Storage Layer**: PostgreSQL database with SQLAlchemy ORM
 - **Alert System**: Configurable threshold-based alerting
 
 ## Key Components
@@ -89,9 +89,10 @@ The application follows a modular architecture with clear separation of concerns
   - Used for interpreting user queries about system performance
 
 ### Data Storage
-- **File-based storage**: CSV and JSON files for persistence
-- **In-memory caching**: Recent metrics stored in memory for performance
-- **Configuration files**: JSON-based alert threshold configuration
+- **PostgreSQL Database**: Full relational database with SQLAlchemy ORM
+- **User Management**: Database-backed user accounts with authentication
+- **System Metrics**: Time-series data stored in database tables
+- **Alert Management**: Database-stored alert thresholds and history
 
 ## Deployment Strategy
 
@@ -123,6 +124,8 @@ Changelog:
 - July 01, 2025. Added user authentication system with sign-up and login
 - July 01, 2025. Added user management for admin users
 - July 01, 2025. Implemented role-based access control
+- July 01, 2025. Integrated PostgreSQL database for data persistence
+- July 01, 2025. Migrated from file-based to database storage system
 ```
 
 ## User Preferences

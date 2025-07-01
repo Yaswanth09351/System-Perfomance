@@ -4,24 +4,20 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
+from database import DatabaseStorage
 
 class AuthenticationManager:
     """Handles user authentication, sign-up, and login functionality"""
     
-    def __init__(self, users_file="users.json"):
-        self.users_file = users_file
+    def __init__(self):
         self.session_timeout = 24  # hours
+        self.db_storage = DatabaseStorage()
         self.load_users()
     
     def load_users(self) -> Dict:
-        """Load users from JSON file"""
+        """Load users from database"""
         try:
-            if os.path.exists(self.users_file):
-                with open(self.users_file, 'r') as f:
-                    self.users = json.load(f)
-            else:
-                self.users = {}
-                self.save_users()
+            self.users = self.db_storage.get_all_users()
             return self.users
         except Exception as e:
             st.error(f"Error loading users: {e}")
@@ -29,14 +25,9 @@ class AuthenticationManager:
             return {}
     
     def save_users(self) -> bool:
-        """Save users to JSON file"""
-        try:
-            with open(self.users_file, 'w') as f:
-                json.dump(self.users, f, indent=2)
-            return True
-        except Exception as e:
-            st.error(f"Error saving users: {e}")
-            return False
+        """Save users to database (legacy method - now handled by database)"""
+        # This method is kept for compatibility but actual saves happen in database methods
+        return True
     
     def hash_password(self, password: str) -> str:
         """Hash password using SHA-256"""
@@ -66,7 +57,8 @@ class AuthenticationManager:
                 return False, "Invalid email format"
             
             # Check if user already exists
-            if email in self.users:
+            existing_user = self.db_storage.get_user(email)
+            if existing_user:
                 return False, "User already exists"
             
             # Validate password
@@ -74,23 +66,11 @@ class AuthenticationManager:
             if not is_valid:
                 return False, message
             
-            # Create user
-            self.users[email] = {
-                'email': email,
-                'password': self.hash_password(password),
-                'full_name': full_name,
-                'created_at': datetime.now().isoformat(),
-                'last_login': None,
-                'role': 'user',  # Default role
-                'preferences': {
-                    'theme': 'light',
-                    'auto_refresh': True,
-                    'refresh_interval': 5
-                }
-            }
-            
-            # Save to file
-            if self.save_users():
+            # Create user in database
+            password_hash = self.hash_password(password)
+            if self.db_storage.create_user(email, password_hash, full_name):
+                # Reload users cache
+                self.load_users()
                 return True, "Account created successfully"
             else:
                 return False, "Error saving account"
@@ -101,16 +81,18 @@ class AuthenticationManager:
     def authenticate_user(self, email: str, password: str) -> Tuple[bool, str, Optional[Dict]]:
         """Authenticate user login"""
         try:
-            if email not in self.users:
+            user = self.db_storage.get_user(email)
+            if not user:
                 return False, "User not found", None
             
-            user = self.users[email]
             if user['password'] != self.hash_password(password):
                 return False, "Invalid password", None
             
-            # Update last login
-            user['last_login'] = datetime.now().isoformat()
-            self.save_users()
+            # Update last login in database
+            self.db_storage.update_user_login(email)
+            
+            # Reload users cache
+            self.load_users()
             
             return True, "Login successful", user
             
@@ -158,9 +140,10 @@ class AuthenticationManager:
     def update_user_preferences(self, email: str, preferences: Dict) -> bool:
         """Update user preferences"""
         try:
-            if email in self.users:
-                self.users[email]['preferences'].update(preferences)
-                return self.save_users()
+            if self.db_storage.update_user_preferences(email, preferences):
+                # Reload users cache
+                self.load_users()
+                return True
             return False
         except Exception as e:
             st.error(f"Error updating preferences: {e}")
