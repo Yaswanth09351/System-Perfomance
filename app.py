@@ -12,6 +12,7 @@ from components.ml_predictor import PerformancePredictor
 from components.ai_assistant import AIAssistant
 from components.dashboard import Dashboard
 from components.alerts import AlertManager
+from components.auth import AuthenticationManager
 from utils.data_storage import DataStorage
 from utils.helpers import format_bytes, get_color_for_usage
 
@@ -33,18 +34,38 @@ def initialize_components():
     alert_manager = AlertManager()
     data_storage = DataStorage()
     dashboard = Dashboard()
+    auth_manager = AuthenticationManager()
     
-    return collector, predictor, ai_assistant, alert_manager, data_storage, dashboard
+    return collector, predictor, ai_assistant, alert_manager, data_storage, dashboard, auth_manager
 
 def main():
     # Initialize components
-    collector, predictor, ai_assistant, alert_manager, data_storage, dashboard = initialize_components()
+    collector, predictor, ai_assistant, alert_manager, data_storage, dashboard, auth_manager = initialize_components()
     
+    # Check authentication
+    if not auth_manager.render_auth_page():
+        return
+    
+    # User is authenticated, show main dashboard
     # Sidebar navigation
     st.sidebar.title("🖥️ System Monitor")
+    
+    # User profile in sidebar
+    with st.sidebar:
+        auth_manager.render_user_profile()
+        st.markdown("---")
+    
+    # Get user role for navigation
+    user_role = st.session_state.get('user_role', 'user')
+    navigation_options = ["Real-time Dashboard", "Performance Predictions", "AI Assistant", "Alerts & Settings", "Data Export"]
+    
+    # Add admin options if user is admin
+    if user_role == 'admin':
+        navigation_options.append("User Management")
+    
     page = st.sidebar.selectbox(
         "Navigate to:",
-        ["Real-time Dashboard", "Performance Predictions", "AI Assistant", "Alerts & Settings", "Data Export"]
+        navigation_options
     )
     
     # Theme toggle
@@ -71,6 +92,9 @@ def main():
     
     elif page == "Data Export":
         render_data_export(data_storage)
+    
+    elif page == "User Management":
+        render_user_management(auth_manager)
 
 def render_dashboard(collector, data_storage, dashboard, auto_refresh, refresh_interval):
     """Render the main dashboard page"""
@@ -129,7 +153,7 @@ def render_dashboard(collector, data_storage, dashboard, auto_refresh, refresh_i
         
         # Create time series charts
         df = pd.DataFrame(historical_data)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed')
         
         # CPU Chart
         fig_cpu = px.line(df, x='timestamp', y='cpu_percent', 
@@ -539,6 +563,101 @@ def render_data_export(data_storage):
             
     except Exception as e:
         st.error(f"❌ Error loading data statistics: {str(e)}")
+
+def render_user_management(auth_manager):
+    """Render the user management page (admin only)"""
+    st.title("👥 User Management")
+    
+    # Check if user is admin
+    if st.session_state.get('user_role') != 'admin':
+        st.error("Access denied. Admin privileges required.")
+        return
+    
+    # User statistics
+    stats = auth_manager.get_user_stats()
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Users", stats['total_users'])
+    with col2:
+        st.metric("Active Users (30 days)", stats['active_users'])
+    with col3:
+        if stats['newest_user']:
+            st.metric("Newest User", stats['newest_user'])
+    
+    st.markdown("---")
+    
+    # User list
+    st.subheader("📋 All Users")
+    
+    if auth_manager.users:
+        users_data = []
+        for email, user_data in auth_manager.users.items():
+            users_data.append({
+                'Email': email,
+                'Name': user_data['full_name'],
+                'Role': user_data.get('role', 'user'),
+                'Created': user_data['created_at'][:10],
+                'Last Login': user_data.get('last_login', 'Never')[:10] if user_data.get('last_login') else 'Never'
+            })
+        
+        df = pd.DataFrame(users_data)
+        st.dataframe(df, use_container_width=True)
+        
+        # User actions
+        st.subheader("🔧 User Actions")
+        
+        selected_user = st.selectbox("Select User", list(auth_manager.users.keys()))
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🔒 Reset Password"):
+                st.info("Password reset functionality would be implemented here")
+        
+        with col2:
+            if st.button("🔄 Change Role"):
+                current_role = auth_manager.users[selected_user].get('role', 'user')
+                new_role = 'admin' if current_role == 'user' else 'user'
+                auth_manager.users[selected_user]['role'] = new_role
+                auth_manager.save_users()
+                st.success(f"Changed {selected_user} role to {new_role}")
+                st.rerun()
+        
+        with col3:
+            if st.button("🗑️ Delete User"):
+                if selected_user != st.session_state.get('user_email'):
+                    del auth_manager.users[selected_user]
+                    auth_manager.save_users()
+                    st.success(f"Deleted user {selected_user}")
+                    st.rerun()
+                else:
+                    st.error("Cannot delete your own account")
+    else:
+        st.info("No users found")
+    
+    st.markdown("---")
+    
+    # Create admin user
+    st.subheader("➕ Create Admin User")
+    
+    with st.form("create_admin_form"):
+        admin_name = st.text_input("Full Name")
+        admin_email = st.text_input("Email")
+        admin_password = st.text_input("Password", type="password")
+        
+        if st.form_submit_button("Create Admin"):
+            if admin_name and admin_email and admin_password:
+                success, message = auth_manager.create_user(admin_email, admin_password, admin_name)
+                if success:
+                    # Set as admin
+                    auth_manager.users[admin_email]['role'] = 'admin'
+                    auth_manager.save_users()
+                    st.success(f"Admin user created successfully: {admin_email}")
+                else:
+                    st.error(message)
+            else:
+                st.error("Please fill in all fields")
 
 if __name__ == "__main__":
     main()

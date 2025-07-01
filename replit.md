@@ -45,6 +45,12 @@ The application follows a modular architecture with clear separation of concerns
    - JSON-based configuration persistence
    - Alert history tracking and notification system
 
+6. **AuthenticationManager** (`components/auth.py`)
+   - User registration and login functionality
+   - Password hashing and secure session management
+   - Role-based access control (user/admin)
+   - User preference management and profile settings
+
 ### Utility Components
 
 1. **DataStorage** (`utils/data_storage.py`)
@@ -114,6 +120,9 @@ The application is designed for local deployment with the following consideratio
 ```
 Changelog:
 - July 01, 2025. Initial setup
+- July 01, 2025. Added user authentication system with sign-up and login
+- July 01, 2025. Added user management for admin users
+- July 01, 2025. Implemented role-based access control
 ```
 
 ## User Preferences

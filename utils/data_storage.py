@@ -57,9 +57,17 @@ class DataStorage:
             # Filter in-memory data
             filtered_data = []
             for record in self.in_memory_data:
-                record_time = datetime.fromisoformat(record['timestamp'])
-                if record_time >= cutoff_time:
-                    filtered_data.append(record)
+                try:
+                    if isinstance(record['timestamp'], str):
+                        record_time = datetime.fromisoformat(record['timestamp'])
+                    else:
+                        record_time = record['timestamp']
+                    
+                    if record_time >= cutoff_time:
+                        filtered_data.append(record)
+                except (ValueError, TypeError) as e:
+                    print(f"Error parsing timestamp {record.get('timestamp')}: {e}")
+                    continue
             
             # If we don't have enough data in memory, try to load from CSV
             if len(filtered_data) < 10 and os.path.exists(self.csv_file):
@@ -121,8 +129,14 @@ class DataStorage:
                 cutoff_time = datetime.now() - timedelta(hours=hours)
                 df = df[df['timestamp'] >= cutoff_time]
             
-            # Convert back to list of dictionaries
-            return df.to_dict('records')
+            # Convert timestamps back to strings and return as records
+            records = []
+            for _, row in df.iterrows():
+                record = row.to_dict()
+                if isinstance(record['timestamp'], pd.Timestamp):
+                    record['timestamp'] = record['timestamp'].strftime('%Y-%m-%dT%H:%M:%S')
+                records.append(record)
+            return records
             
         except Exception as e:
             print(f"Error loading from CSV: {e}")
