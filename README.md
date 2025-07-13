@@ -22,7 +22,7 @@ Installation
 You can clone the repo using:
 
 bash
-git clone https://github.com/raghu171819/SystemPerformanceTracker.git
+git clone https://github.com/Yaswanth09351/System-Perfomance.git
 cd SystemPerformanceTracker
 If you need more details about usage, setup, or the internal structure, let me know what specific aspect you want to explore!
 ![image](https://github.com/user-attachments/assets/6b92faae-c42a-421d-bd38-4fd3ddcd8855)
